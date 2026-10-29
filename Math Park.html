@@ -1,0 +1,481 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Math Park</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: one centered column. Home = level picker + five game tiles. Play = progress pips, big question card with a picture hint, answer buttons. Single bright look by choice. */
+:root {
+  --bg: #eef5ff;
+  --ink: #1d2a4a;
+  --muted: #5d6b8c;
+  --card: #ffffff;
+  --c1: #ff6b6b;
+  --c2: #4c8dff;
+  --c3: #27c59a;
+  --c4: #8b6cff;
+  --c5: #ffab2e;
+  --good: #22b573;
+  --warn: #ffab2e;
+  --line: #d5e1f5;
+  --font-display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 18px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
+h1, h2 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top h1 { font-size: 40px; font-weight: 700; line-height: 1; }
+.top h1 span { color: var(--c2); }
+.togs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.replay { border: 2px solid var(--line); background: #f4f8ff; border-radius: 99px; padding: 6px 16px; font-weight: 800; font-size: 15px; }
+.snd { border: 2px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 14px; font-weight: 800; font-size: 14px; }
+.lead { margin: -8px 0 0; color: var(--muted); font-weight: 600; }
+
+.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.levels button { background: var(--card); border: 3px solid var(--line); border-radius: 16px; padding: 10px 6px; font-weight: 800; font-size: 16px; line-height: 1.2; }
+.levels button small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.levels button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+.levels button[aria-pressed="true"] small { color: #c9d4ee; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.tile { border: 0; border-radius: 22px; padding: 14px 14px 12px; text-align: left; color: #fff; display: flex; flex-direction: column; gap: 6px; min-height: 150px; box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+.tile:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
+.tile .sym { font-family: var(--font-display); font-weight: 700; font-size: 54px; line-height: 1; }
+.tile .sym.sm { font-size: 40px; padding-top: 8px; }
+.tile .nm { font-family: var(--font-display); font-weight: 700; font-size: 21px; line-height: 1.1; }
+.tile .best { margin-top: auto; display: flex; gap: 4px; }
+.star { width: 20px; height: 20px; background: rgba(255,255,255,.4); clip-path: polygon(50% 0, 62% 35%, 98% 36%, 69% 57%, 80% 92%, 50% 71%, 20% 92%, 31% 57%, 2% 36%, 38% 35%); display: inline-block; }
+.star.on { background: #fff6b0; }
+.t1 { background: var(--c1); } .t2 { background: var(--c2); } .t3 { background: var(--c3); } .t4 { background: var(--c4); } .t5 { background: var(--c5); }
+.t5 { color: #2b1d00; } .t5 .star { background: rgba(43,29,0,.2); } .t5 .star.on { background: #fff; }
+
+.bar { display: flex; align-items: center; gap: 12px; }
+.back { border: 2px solid var(--line); background: var(--card); border-radius: 99px; padding: 6px 16px; font-weight: 800; font-size: 15px; }
+.pips { flex: 1; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.pips i { height: 12px; border-radius: 6px; background: var(--line); }
+.pips i.now { background: var(--ink); opacity: .5; }
+.pips i.ok { background: var(--good); }
+.pips i.try { background: var(--warn); }
+
+.qcard { background: var(--card); border-radius: 26px; padding: 18px 16px 20px; box-shadow: 0 5px 0 var(--line); display: flex; flex-direction: column; align-items: center; gap: 14px; min-height: 210px; justify-content: center; text-align: center; }
+.qtext { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 9vw, 46px); line-height: 1.1; text-wrap: balance; }
+.qhint { font-weight: 700; color: var(--muted); font-size: 16px; }
+.vis { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 14px; max-width: 100%; }
+.grp { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 220px; }
+.grp.box { border: 3px dashed var(--line); border-radius: 14px; padding: 6px; }
+.op { font-family: var(--font-display); font-weight: 700; font-size: 34px; color: var(--muted); }
+.sh { width: 24px; height: 24px; background: var(--col); display: inline-block; position: relative; }
+.sh.dot { border-radius: 50%; } .sh.sq { border-radius: 6px; }
+.sh.star { clip-path: polygon(50% 0, 62% 35%, 98% 36%, 69% 57%, 80% 92%, 50% 71%, 20% 92%, 31% 57%, 2% 36%, 38% 35%); width: 28px; height: 28px; }
+.sh.tri { clip-path: polygon(50% 6%, 100% 94%, 0 94%); width: 28px; height: 26px; }
+.sh.gone { opacity: .22; }
+.sh.gone::after { content: ""; position: absolute; left: -2px; right: -2px; top: 50%; height: 3px; background: var(--ink); transform: rotate(-35deg); }
+.sh.small { width: 14px; height: 14px; } .sh.small.star, .sh.small.tri { width: 16px; height: 16px; }
+
+.opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.opt { border: 0; border-radius: 22px; background: var(--card); box-shadow: 0 5px 0 var(--line); padding: 14px 8px; min-height: 84px; font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.opt:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--line); }
+.opt.good { background: var(--good); color: #fff; box-shadow: 0 5px 0 #14804f; }
+.opt.bad { background: #ffe1e1; color: #a83a3a; box-shadow: 0 5px 0 #f2b8b8; opacity: .8; }
+.opt:disabled { cursor: default; }
+@media (prefers-reduced-motion: no-preference) { .opt.bad { animation: shake .35s; } }
+@keyframes shake { 20% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 80% { transform: translateX(-4px); } }
+.opts.two .opt { min-height: 120px; }
+.msg { min-height: 28px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 22px; }
+.msg.good { color: #14804f; } .msg.bad { color: #a8641a; }
+
+.done { background: var(--card); border-radius: 26px; padding: 26px 20px; box-shadow: 0 5px 0 var(--line); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.done h2 { font-size: 38px; }
+.done .big .star { width: 54px; height: 54px; background: var(--line); margin: 0 3px; }
+.done .big .star.on { background: var(--c5); }
+.done p { margin: 0; color: var(--muted); font-weight: 700; }
+.done .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.btn { border: 0; border-radius: 99px; background: var(--c2); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 22px; padding: 10px 28px; box-shadow: 0 4px 0 #2d62c0; }
+.btn.alt { background: var(--card); color: var(--ink); border: 3px solid var(--line); box-shadow: none; }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Math <span>Park</span></h1>
+    <div class="togs">
+      <button class="snd" id="lang" type="button">Voice: Hinglish</button>
+      <button class="snd" id="chvoice" type="button">Change voice</button>
+      <button class="snd" id="voice" type="button" aria-pressed="true">Voice on</button>
+      <button class="snd" id="snd" type="button" aria-pressed="true">Sound on</button>
+    </div>
+  </div>
+
+  <section id="home" class="wrap">
+    <p class="lead">Pick your level, then pick a game.</p>
+    <div class="levels" id="levels">
+      <button type="button" data-lv="0" aria-pressed="true">Ages 4 to 5<small>small numbers</small></button>
+      <button type="button" data-lv="1" aria-pressed="false">Ages 6 to 7<small>up to 20</small></button>
+      <button type="button" data-lv="2" aria-pressed="false">Ages 8 to 9<small>bigger numbers</small></button>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section id="play" class="wrap" hidden>
+    <div class="bar">
+      <button class="back" id="back" type="button">Menu</button>
+      <div class="pips" id="pips"></div>
+    </div>
+    <div class="qcard" id="qcard"></div>
+    <div class="msg" id="msg" aria-live="polite"></div>
+    <div class="opts" id="opts"></div>
+  </section>
+
+  <section id="end" class="done" hidden></section>
+</div>
+
+<script>
+(function () {
+  var MODES = [
+    { id: "count", name: "Count It", sym: "123", cls: "t1", small: true },
+    { id: "add", name: "Add It", sym: "+", cls: "t2" },
+    { id: "sub", name: "Take Away", sym: "−", cls: "t3" },
+    { id: "cmp", name: "Bigger or Smaller", sym: "&gt;", cls: "t4" },
+    { id: "mul", name: "Times Tables", sym: "×", cls: "t5" }
+  ];
+  var COLS = ["#ff6b6b", "#4c8dff", "#27c59a", "#8b6cff", "#ffab2e"];
+  var SHAPES = ["dot", "star", "sq", "tri"];
+  var ROUND = 10;
+  var level = 0, mode = null, idx = 0, firstTry = 0, q = null, tries = 0, locked = false, saved = {}, sound = true, ctx = null, timer = null;
+
+  function $(id) { return document.getElementById(id); }
+  function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = rnd(0, i), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  try { saved = JSON.parse(localStorage.getItem("mathpark-v1") || "{}") || {}; } catch (e) { saved = {}; }
+  function save() { try { localStorage.setItem("mathpark-v1", JSON.stringify(saved)); } catch (e) {} }
+
+  /* ---------- sound ---------- */
+  function tone(f, d, type, vol, slide) {
+    if (!sound) return;
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") ctx.resume();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(f, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(Math.max(40, f * (slide || 1)), ctx.currentTime + d);
+      g.gain.setValueAtTime(vol || 0.15, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + d);
+      o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + d);
+    } catch (e) {}
+  }
+  /* ---------- voice (reads questions and answers aloud) ---------- */
+  var voiceOn = true, voiceOk = ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window);
+  /* lang: "hing" = Hinglish (Hindi in Roman letters, read by an Indian English voice), "hi" = Hindi, "en" = English */
+  var lang = "hing";
+  function langRe() { return lang === "hi" ? /^hi/i : lang === "hing" ? /^en[-_]IN/i : /^en/i; }
+  function qs() {
+    if (lang === "hing") {
+      if (q.text === "How many?") return "Kitne hain? Ginti karo.";
+      if (q.text === "Which is bigger?") return "Kaun sa number bada hai?";
+      if (q.text === "Which is smaller?") return "Kaun sa number chhota hai?";
+    }
+    if (lang === "hi") {
+      if (q.text === "How many?") return "कितने हैं?";
+      if (q.text === "Which is bigger?") return "कौन सी संख्या बड़ी है?";
+      if (q.text === "Which is smaller?") return "कौन सी संख्या छोटी है?";
+    }
+    return q.text;
+  }
+  function sayable(s) {
+    if (lang === "hing") return String(s).replace(/ \+ /g, " plus ").replace(/ − /g, " minus ").replace(/ × /g, " times ").replace(/ = \?/g, " equals kitna?").replace(/ = /g, " equals ");
+    if (lang === "hi") return String(s).replace(/ \+ /g, " जमा ").replace(/ − /g, " घटा ").replace(/ × /g, " गुणा ").replace(/ = \?/g, " बराबर कितना?").replace(/ = /g, " बराबर ");
+    return String(s).replace(/ \+ /g, " plus ").replace(/ − /g, " minus ").replace(/ × /g, " times ").replace(/ = \?/g, " equals what?").replace(/ = /g, " equals ");
+  }
+  /* Rank installed voices: neural and online voices sound the most human, then Google and system voices */
+  function voiceScore(v) {
+    var n = v.name || "", s = 0;
+    if (/natural|neural/i.test(n)) s += 50;
+    if (/online/i.test(n)) s += 30;
+    if (/google|siri|enhanced|premium/i.test(n)) s += 20;
+    if (/swara|kalpana|lekha|aditi|veena|neerja|heera|samantha|jenny|aria|zira/i.test(n)) s += 10;
+    if (!v.localService) s += 5;
+    if (/compact|espeak/i.test(n)) s -= 30;
+    return s;
+  }
+  function voiceList() {
+    var all = [];
+    try { all = window.speechSynthesis.getVoices() || []; } catch (e) {}
+    var res = lang === "hing" ? [/^en[-_]IN/i, /^hi/i, /^en/i] : [langRe()], out = [];
+    for (var r = 0; r < res.length && !out.length; r++) out = all.filter(function (v) { return res[r].test(v.lang); });
+    return out.sort(function (a, b) { return voiceScore(b) - voiceScore(a); });
+  }
+  var voicePick = {};
+  try { voicePick = JSON.parse(localStorage.getItem("mathpark-voice") || "{}") || {}; } catch (e) { voicePick = {}; }
+  function currentVoice() {
+    var list = voiceList();
+    if (!list.length) return null;
+    var want = voicePick[lang];
+    for (var i = 0; i < list.length; i++) if (list[i].name === want) return list[i];
+    return list[0];
+  }
+  function nextVoice() {
+    var list = voiceList();
+    if (list.length < 2) return list[0] || null;
+    var cur = currentVoice(), i = list.indexOf(cur), nv = list[(i + 1) % list.length];
+    voicePick[lang] = nv.name;
+    try { localStorage.setItem("mathpark-voice", JSON.stringify(voicePick)); } catch (e) {}
+    return nv;
+  }
+  if (voiceOk) { try { window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function () {}; } catch (e) {} }
+  function speak(s, cheer) {
+    if (!voiceOn || !voiceOk) return;
+    try {
+      var syn = window.speechSynthesis;
+      syn.cancel();
+      var u = new SpeechSynthesisUtterance(sayable(s));
+      var v = currentVoice();
+      if (v) u.voice = v;
+      u.lang = v ? v.lang : (lang === "hi" ? "hi-IN" : lang === "hing" ? "en-IN" : "en-US");
+      /* near-normal pitch and speed keeps the voice natural; cheers get only a small lift */
+      u.rate = cheer ? 1.0 : 0.95; u.pitch = cheer ? 1.12 : 1.0; u.volume = 1;
+      syn.speak(u);
+    } catch (e) {}
+  }
+  function happy() { tone(523, 0.14, "triangle", 0.15, 1); setTimeout(function () { tone(784, 0.22, "triangle", 0.15, 1); }, 110); }
+  function oops() { tone(220, 0.22, "sine", 0.15, 0.7); }
+
+  /* ---------- picture helpers ---------- */
+  function shapes(n, kind, col, extraClass, goneFrom) {
+    var h = "";
+    for (var i = 0; i < n; i++) {
+      h += '<span class="sh ' + kind + (extraClass ? " " + extraClass : "") + (goneFrom !== undefined && i >= goneFrom ? " gone" : "") + '" style="--col:' + col + '"></span>';
+    }
+    return h;
+  }
+
+  /* ---------- question makers ---------- */
+  function options(ans) {
+    var c = [ans - 1, ans + 1, ans - 2, ans + 2];
+    if (level === 2) c = c.concat([ans + 10, ans - 10, ans + 5, ans - 5]);
+    else if (ans > 6) c = c.concat([ans + 3, ans - 3]);
+    c = shuffle(c.filter(function (v) { return v >= 0 && v !== ans; }));
+    var out = [ans];
+    for (var i = 0; i < c.length && out.length < 4; i++) if (out.indexOf(c[i]) < 0) out.push(c[i]);
+    return shuffle(out).map(function (v) { return { val: v, html: String(v) }; });
+  }
+
+  function makeQ() {
+    var a, b, ans, vis = "", text = "", hint = "", say = "";
+    if (mode === "count") {
+      var max = [10, 15, 25][level], min = [1, 4, 10][level];
+      ans = rnd(min, max);
+      var kind = pick(SHAPES), col = pick(COLS);
+      text = "How many?"; hint = "Count each one";
+      vis = '<div class="grp">' + shapes(ans, kind, col) + "</div>";
+      say = "There are " + ans;
+      return { text: text, hint: hint, vis: vis, ans: ans, opts: options(ans), say: say, sayHi: ans + " हैं", sayHg: ans + " hain" };
+    }
+    if (mode === "add") {
+      if (level === 0) { a = rnd(1, 5); b = rnd(1, 5); }
+      else if (level === 1) { a = rnd(3, 12); b = rnd(2, 20 - a > 12 ? 12 : Math.max(2, 20 - a)); }
+      else { a = rnd(12, 79); b = rnd(11, 99 - a > 11 ? 99 - a : 11); }
+      ans = a + b; text = a + " + " + b + " = ?";
+      if (level < 2) {
+        hint = "Count all the shapes together";
+        vis = '<div class="grp">' + shapes(a, "dot", COLS[1]) + '</div><span class="op">+</span><div class="grp">' + shapes(b, "dot", COLS[0]) + "</div>";
+      } else hint = "Add the tens, then the ones";
+      return { text: text, hint: hint, vis: vis, ans: ans, opts: options(ans), say: a + " + " + b + " = " + ans };
+    }
+    if (mode === "sub") {
+      if (level === 0) { a = rnd(2, 10); b = rnd(1, a - 1); }
+      else if (level === 1) { a = rnd(6, 20); b = rnd(1, a - 1); }
+      else { a = rnd(25, 99); b = rnd(6, a - 5); }
+      ans = a - b; text = a + " − " + b + " = ?";
+      if (level < 2) {
+        hint = "Cross out " + b + ", then count what is left";
+        vis = '<div class="grp">' + shapes(a, "star", COLS[2], "", a - b) + "</div>";
+      } else hint = "Take away the tens, then the ones";
+      return { text: text, hint: hint, vis: vis, ans: ans, opts: options(ans), say: a + " − " + b + " = " + ans };
+    }
+    if (mode === "cmp") {
+      var hi = [10, 99, 999][level], lo = [1, 10, 100][level];
+      a = rnd(lo, hi); do { b = rnd(lo, hi); } while (b === a);
+      var big = Math.random() < 0.5;
+      text = big ? "Which is bigger?" : "Which is smaller?";
+      var correct = big ? Math.max(a, b) : Math.min(a, b);
+      var os = [a, b].map(function (v) {
+        var h = String(v);
+        if (level === 0) h += '<span class="grp">' + shapes(v, "dot", COLS[3], "small") + "</span>";
+        return { val: v, html: h };
+      });
+      return { text: text, hint: "Tap the number you pick", vis: "", ans: correct, opts: os, two: true, say: correct + " is " + (big ? "bigger" : "smaller"), sayHi: correct + (big ? " बड़ी है" : " छोटी है"), sayHg: correct + (big ? " bada hai" : " chhota hai") };
+    }
+    // times tables
+    var tables = [[2, 10], [2, 3, 4, 5, 10], [3, 4, 6, 7, 8, 9, 11, 12]][level];
+    a = pick(tables); b = rnd(level === 0 ? 1 : 2, [5, 10, 12][level]);
+    ans = a * b; text = a + " × " + b + " = ?";
+    if (ans <= 30 && level < 2) {
+      hint = a + " groups of " + b;
+      for (var i = 0; i < a; i++) vis += '<div class="grp box">' + shapes(b, "dot", COLS[i % COLS.length], "small") + "</div>";
+    } else hint = a + " groups of " + b + ", all together";
+    return { text: text, hint: hint, vis: vis, ans: ans, opts: options(ans), say: a + " × " + b + " = " + ans };
+  }
+
+  /* ---------- screens ---------- */
+  function show(which) {
+    $("home").hidden = which !== "home";
+    $("play").hidden = which !== "play";
+    $("end").hidden = which !== "end";
+  }
+
+  function starsHtml(n, total) {
+    var h = "";
+    for (var i = 0; i < total; i++) h += '<span class="star' + (i < n ? " on" : "") + '"></span>';
+    return h;
+  }
+
+  function renderHome() {
+    var t = $("tiles"), h = "";
+    MODES.forEach(function (m) {
+      var s = saved[m.id + "_" + level] || 0;
+      h += '<button type="button" class="tile ' + m.cls + '" data-mode="' + m.id + '">' +
+        '<span class="sym' + (m.small ? " sm" : "") + '">' + m.sym + '</span><span class="nm">' + m.name +
+        '</span><span class="best" aria-label="' + s + ' of 3 stars">' + starsHtml(s, 3) + "</span></button>";
+    });
+    t.innerHTML = h;
+    Array.prototype.forEach.call($("levels").children, function (b) { b.setAttribute("aria-pressed", String(+b.dataset.lv === level)); });
+  }
+
+  function renderPips() {
+    var h = "";
+    for (var i = 0; i < ROUND; i++) h += '<i id="pip' + i + '"' + (i === idx ? ' class="now"' : "") + "></i>";
+    $("pips").innerHTML = h;
+  }
+
+  function nextQ() {
+    if (idx >= ROUND) return finish();
+    q = makeQ(); tries = 0; locked = false;
+    var pipsNow = document.querySelector(".pips i.now"); if (pipsNow) pipsNow.className = "";
+    var p = $("pip" + idx); if (p) p.className = "now";
+    $("qcard").innerHTML = '<div class="qtext">' + q.text + "</div>" + (q.vis ? '<div class="vis">' + q.vis + "</div>" : "") + '<div class="qhint">' + q.hint + "</div>" + (voiceOk ? '<button class="replay" id="replay" type="button">Hear it again</button>' : "");
+    var rp = $("replay"); if (rp) rp.onclick = function () { speak(qs()); };
+    speak(qs());
+$("msg").textContent = ""; $("msg").className = "msg";
+    var o = $("opts"); o.className = "opts" + (q.two ? " two" : "");
+    o.innerHTML = q.opts.map(function (x, i) { return '<button type="button" class="opt" data-i="' + i + '">' + x.html + "</button>"; }).join("");
+  }
+
+  function confetti(el) {
+    var r = el.getBoundingClientRect();
+    for (var i = 0; i < 14; i++) {
+      var s = document.createElement("span"), sz = rnd(8, 14);
+      s.style.cssText = "position:fixed;pointer-events:none;z-index:50;border-radius:" + (i % 2 ? "50%" : "3px") + ";width:" + sz + "px;height:" + sz + "px;background:" + COLS[i % COLS.length] + ";left:" + (r.left + r.width / 2) + "px;top:" + (r.top + r.height / 2) + "px";
+      document.body.appendChild(s);
+      var ang = Math.random() * 6.283, dist = rnd(60, 150);
+      var an = s.animate([{ transform: "translate(0,0) rotate(0)", opacity: 1 }, { transform: "translate(" + Math.cos(ang) * dist + "px," + (Math.sin(ang) * dist + 40) + "px) rotate(300deg)", opacity: 0 }], { duration: 750, easing: "ease-out" });
+      an.onfinish = (function (n) { return function () { n.remove(); }; })(s);
+    }
+  }
+
+  function answer(i) {
+    if (locked) return;
+    var btn = $("opts").children[i], pick = q.opts[i];
+    if (pick.val === q.ans) {
+      locked = true;
+      btn.classList.add("good");
+      Array.prototype.forEach.call($("opts").children, function (b) { b.disabled = true; });
+      var first = tries === 0;
+      if (first) firstTry++;
+      var p = $("pip" + idx); if (p) p.className = first ? "ok" : "try";
+      $("msg").textContent = pickWord(first) + " " + q.say;
+      $("msg").className = "msg good";
+      happy(); confetti(btn);
+      if (lang === "hing") speak(["Wah! Sahi jawab!", "Shabash! Bilkul sahi!", "Hurray! Tumne kar dikhaya!", "Bahut badhiya! Sahi hai!", "Kamaal! Sahi jawab!"][rnd(0, 4)] + " " + (q.sayHg || q.say), true);
+      else if (lang === "hi") speak(["वाह! सही जवाब!", "शाबाश! बिल्कुल सही!", "हुर्रे! आपने कर दिखाया!", "बहुत बढ़िया! सही है!", "कमाल! सही जवाब!"][rnd(0, 4)] + " " + (q.sayHi || q.say), true);
+      else speak(["Yay! Correct!", "Awesome! That is correct!", "Woohoo! You got it!", "Super duper! Correct!", "Hooray! Right answer!"][rnd(0, 4)] + " " + q.say, true);
+      idx++;
+      timer = setTimeout(nextQ, voiceOn && voiceOk ? 2600 : 1500);
+    } else {
+      tries++;
+      btn.classList.add("bad"); btn.disabled = true;
+      $("msg").textContent = "Not quite. Try another one!";
+      $("msg").className = "msg bad";
+      oops();
+      if (lang === "hing") speak(["Arre arre! Galat jawab! Phir se koshish karo, tum kar sakte ho!", "Oh ho! Galat! Ek baar aur try karo!"][rnd(0, 1)], true);
+      else if (lang === "hi") speak(["अरे अरे! गलत जवाब! फिर से कोशिश करो, तुम कर सकते हो!", "ओह हो! गलत! एक बार और कोशिश करो!"][rnd(0, 1)], true);
+      else speak(["Oh oh! Incorrect! Try again, you can do it!", "Oh oh! Incorrect! Give it another go!"][rnd(0, 1)], true);
+    }
+  }
+  function pickWord(first) { return first ? ["Yes!", "Great!", "Super!", "Well done!"][rnd(0, 3)] : "You got it!"; }
+
+  function startGame(id) {
+    mode = id; idx = 0; firstTry = 0;
+    show("play"); renderPips(); nextQ();
+    window.scrollTo(0, 0);
+  }
+
+  function finish() {
+    var stars = firstTry >= 9 ? 3 : firstTry >= 6 ? 2 : firstTry >= 3 ? 1 : 0;
+    var key = mode + "_" + level;
+    if (stars > (saved[key] || 0)) { saved[key] = stars; save(); }
+    var name = MODES.filter(function (m) { return m.id === mode; })[0].name;
+    var head = stars === 3 ? "Amazing!" : stars === 2 ? "Great job!" : stars === 1 ? "Good work!" : "Nice try!";
+    var line = stars === 3 ? "Almost everything right on the first try." : "Play again to win more stars.";
+    $("end").innerHTML = '<h2>' + head + '</h2><div class="big">' + starsHtml(stars, 3) + "</div>" +
+      "<p>" + firstTry + " of " + ROUND + " right on the first try in " + name + ".</p><p>" + line + "</p>" +
+      '<div class="row"><button class="btn" id="again" type="button">Play again</button><button class="btn alt" id="menu" type="button">Menu</button></div>';
+    show("end");
+    if (stars >= 2) { happy(); setTimeout(happy, 350); }
+    $("again").onclick = function () { startGame(mode); };
+    $("menu").onclick = goHome;
+  }
+
+  function goHome() { clearTimeout(timer); try { if (voiceOk) window.speechSynthesis.cancel(); } catch (e) {} renderHome(); show("home"); }
+
+  $("tiles").addEventListener("click", function (e) { var b = e.target.closest(".tile"); if (b) startGame(b.dataset.mode); });
+  $("levels").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) { level = +b.dataset.lv; renderHome(); } });
+  $("opts").addEventListener("click", function (e) { var b = e.target.closest(".opt"); if (b && !b.disabled) answer(+b.dataset.i); });
+  $("back").addEventListener("click", goHome);
+  if (!voiceOk) { $("voice").hidden = true; $("lang").hidden = true; $("chvoice").hidden = true; }
+  $("chvoice").addEventListener("click", function () {
+    voiceOn = true; $("voice").textContent = "Voice on"; $("voice").setAttribute("aria-pressed", "true");
+    nextVoice();
+    var cv = currentVoice();
+    speak(lang === "hing" ? "Namaste, yeh meri awaaz hai. Kya yeh achhi lagi?" : lang === "hi" ? "नमस्ते, यह मेरी आवाज़ है। क्या यह अच्छी लगी?" : "Hello, this is my voice. Do you like it?");
+    this.textContent = cv ? "Change voice" : "No voice found";
+  });
+  $("lang").addEventListener("click", function () {
+    lang = lang === "hing" ? "hi" : lang === "hi" ? "en" : "hing";
+    this.textContent = lang === "hing" ? "Voice: Hinglish" : lang === "hi" ? "Voice: हिन्दी" : "Voice: English";
+    if (!voiceOn) { voiceOn = true; $("voice").textContent = "Voice on"; $("voice").setAttribute("aria-pressed", "true"); }
+    speak(lang === "hing" ? "Namaste! Chalo math seekhte hain!" : lang === "hi" ? "नमस्ते! चलो गणित सीखें!" : "Hello! Let us learn math!", true);
+    if (q && !$("play").hidden) { var rp = $("replay"); }
+  });
+  $("voice").addEventListener("click", function () {
+    voiceOn = !voiceOn; this.textContent = voiceOn ? "Voice on" : "Voice off"; this.setAttribute("aria-pressed", String(voiceOn));
+    if (voiceOn) speak(lang === "hing" ? "Awaaz chalu hai" : lang === "hi" ? "आवाज़ चालू है" : "Voice is on"); else { try { window.speechSynthesis.cancel(); } catch (e) {} }
+  });
+  $("snd").addEventListener("click", function () {
+    sound = !sound; this.textContent = sound ? "Sound on" : "Sound off"; this.setAttribute("aria-pressed", String(sound));
+    if (sound) happy();
+  });
+
+  renderHome();
+  show("home");
+})();
+</script>
+
+</body></html>
